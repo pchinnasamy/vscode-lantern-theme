@@ -1,0 +1,771 @@
+/*
+ * Lantern theme builder.
+ *
+ * Single source of truth for all three themes. Run `node build-themes.js`
+ * to regenerate the JSON files in ./themes.
+ *
+ * Variants produced:
+ *   - Lantern Nightshade   (dark blue-violet)
+ *   - Lantern Obsidian     (near-black purple)
+ *   - Lantern Abyss        (near-black blue)
+ *
+ * All three share ONE syntax catalog (src/token-colors.base.json), written
+ * in role colors. Each variant maps those roles onto its own palette, and
+ * one workbench template (workbench()) turns a palette into UI colors, so
+ * the variants can only differ where their palettes differ.
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+const OUT_DIR = path.join(__dirname, 'themes');
+const BASE_TOKENS = JSON.parse(
+  fs.readFileSync(path.join(__dirname, 'src', 'token-colors.base.json'), 'utf8')
+);
+
+/* ------------------------------------------------------------------ *
+ * Palettes
+ *
+ * ui:    surfaces from darkest to lightest — editor card, side/panel cards,
+ *        frame (title, activity, status bar), floating widgets — plus the
+ *        light accent used for every border and indicator.
+ * gold:  everything you look for — cursor, active line number, selection,
+ *        find matches, occurrences.
+ * syn:   syntax roles. term: terminal ANSI hues.
+ * ------------------------------------------------------------------ */
+
+const PALETTES = {
+  nightshade: {
+    ui: {
+      editor: '#0c0e22', surface: '#10122a', frame: '#161936', elevated: '#1d2045', seam: '#1f2244',
+      fg: '#dcdef5', muted: '#7e82ab', gutter: '#444a7a', line: '#12152e', accent: '#8a9cff'
+    },
+    gold: { main: '#ffd75f', sel: '#544512', find: '#8a6400' },
+    syn: {
+      keyword: '#9aa8ff', func: '#6fd0f0', type: '#ffd75f', string: '#a8e0a0', number: '#ffa98a',
+      comment: '#656da2', punct: '#8d93c0', param: '#d7b8ff'
+    },
+    term: { red: '#ff7f9f', green: '#a8e0a0', yellow: '#ffd75f', blue: '#9aa8ff', magenta: '#d7b8ff', cyan: '#6fd0f0' }
+  },
+  obsidian: {
+    ui: {
+      editor: '#0e0a1a', surface: '#120d21', frame: '#18122c', elevated: '#211a3a', seam: '#241c3c',
+      fg: '#e0daf5', muted: '#857ca8', gutter: '#4a4170', line: '#150f27', accent: '#9f84ff'
+    },
+    gold: { main: '#ffd166', sel: '#544010', find: '#8a6200' },
+    syn: {
+      keyword: '#bb9cff', func: '#78c4ff', type: '#ffd166', string: '#9fe3b0', number: '#ff9fb5',
+      comment: '#72699e', punct: '#9a92c2', param: '#efc2ff'
+    },
+    term: { red: '#ff7f9f', green: '#9fe3b0', yellow: '#ffd166', blue: '#78c4ff', magenta: '#bb9cff', cyan: '#7ee0e0' }
+  },
+  abyss: {
+    ui: {
+      editor: '#070c18', surface: '#0a1120', frame: '#0f172b', elevated: '#152040', seam: '#18233d',
+      fg: '#d3dcef', muted: '#71809f', gutter: '#3b4a6c', line: '#0d1528', accent: '#6ea8ff'
+    },
+    gold: { main: '#ffd23f', sel: '#4f400c', find: '#876000' },
+    syn: {
+      keyword: '#7fb0ff', func: '#5ed3e6', type: '#ffd23f', string: '#b4e08a', number: '#f79a74',
+      comment: '#5f729c', punct: '#8392b5', param: '#bcaaff'
+    },
+    term: { red: '#ff7a85', green: '#b4e08a', yellow: '#ffd23f', blue: '#7fb0ff', magenta: '#bcaaff', cyan: '#5ed3e6' }
+  }
+};
+
+// Shared semantic hues (diagnostics, git, diff) — tuned for very dark bases.
+const STATUS = {
+  error: '#ff6b7f',
+  warning: '#ffc34d',
+  info: '#6fb8ff',
+  added: '#7ccf8a',
+  modified: '#6fa8f0',
+  deleted: '#e06a7a'
+};
+
+/* ------------------------------------------------------------------ *
+ * Syntax: the base catalog is written in these role colors.
+ * ------------------------------------------------------------------ */
+
+const ROLE = {
+  text: '#000000',
+  keyword: '#cc0000',
+  string: '#527000',
+  number: '#116200',
+  func: '#00627a',
+  type: '#a16800',
+  comment: '#7b7b7bab',
+  error: '#f44747',
+  invalid: '#ffffff'
+};
+
+// Applied after the base catalog so they win. Written in ROLE colors,
+// plus PUNCT / PARAM, which only exist in Lantern palettes.
+const PUNCT = 'punct';
+const PARAM = 'param';
+const SYNTAX_OVERRIDES = [
+  // --- JSON: keys distinct from string values ---
+  {
+    name: 'JSON property name (key)',
+    scope: 'support.type.property-name.json, support.type.property-name.json punctuation',
+    settings: { foreground: ROLE.func }
+  },
+  {
+    name: 'JSON5 / JSONC key',
+    scope: 'support.type.property-name.json5, meta.structure.dictionary.key.json string.quoted',
+    settings: { foreground: ROLE.func }
+  },
+
+  // --- XML / HTML: keyword-colored tags, gold attributes, dim brackets ---
+  {
+    name: 'XML/HTML tag name',
+    scope:
+      'entity.name.tag, entity.name.tag.xml, entity.name.tag.localname.xml, entity.name.tag.html',
+    settings: { foreground: ROLE.keyword }
+  },
+  {
+    name: 'XML/HTML tag punctuation (angle brackets)',
+    scope:
+      'punctuation.definition.tag, punctuation.definition.tag.xml, punctuation.definition.tag.begin.xml, punctuation.definition.tag.end.xml, punctuation.definition.tag.begin.html, punctuation.definition.tag.end.html',
+    settings: { foreground: PUNCT }
+  },
+  {
+    name: 'XML/HTML attribute name',
+    scope:
+      'entity.other.attribute-name, entity.other.attribute-name.xml, entity.other.attribute-name.localname.xml, entity.other.attribute-name.html',
+    settings: { foreground: ROLE.type }
+  },
+  {
+    name: 'XML namespace / prolog / doctype',
+    scope:
+      'entity.name.tag.namespace.xml, entity.other.attribute-name.namespace.xml, meta.tag.preprocessor.xml entity.name.tag, keyword.other.doctype, meta.tag.sgml.doctype',
+    settings: { foreground: ROLE.func }
+  },
+  {
+    name: 'XML attribute values (strings)',
+    scope: 'string.quoted.double.xml, string.quoted.single.xml',
+    settings: { foreground: ROLE.string }
+  },
+  {
+    name: 'XML CDATA',
+    scope: 'string.unquoted.cdata.xml, constant.other.entity.xml',
+    settings: { foreground: ROLE.type }
+  },
+
+  // --- Punctuation and parameters ---
+  {
+    name: 'Punctuation (separators, terminators, braces)',
+    scope:
+      'punctuation.separator, punctuation.terminator, punctuation.accessor, meta.brace, punctuation.definition.block, punctuation.definition.parameters, punctuation.section',
+    settings: { foreground: PUNCT }
+  },
+  {
+    name: 'Parameters',
+    scope: 'variable.parameter, variable.parameter.function',
+    settings: { foreground: PARAM }
+  },
+
+  // --- Invalid: make it visible ---
+  {
+    name: 'Invalid',
+    scope:
+      'invalid, invalid.illegal, invalid.broken, invalid.deprecated, invalid.unimplemented',
+    settings: { foreground: ROLE.error, fontStyle: 'underline' }
+  }
+];
+
+const SEMANTIC = {
+  enumMember: ROLE.text,
+  'variable.constant': ROLE.number,
+  'variable.defaultLibrary': ROLE.type,
+  'variable.readonly': ROLE.number,
+  parameter: PARAM,
+  property: ROLE.text,
+  'property.readonly': ROLE.number,
+  class: ROLE.type,
+  interface: ROLE.type,
+  enum: ROLE.type,
+  type: ROLE.type,
+  namespace: ROLE.type,
+  function: ROLE.func,
+  method: ROLE.func,
+  macro: ROLE.keyword
+};
+
+/* ------------------------------------------------------------------ *
+ * Color helpers
+ * ------------------------------------------------------------------ */
+
+const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+const toHex = (c) => '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
+
+// mix(a, b, w): w of color a over (1 - w) of color b, as opaque hex.
+function mix(a, b, w) {
+  const [x, y] = [rgb(a), rgb(b)];
+  return toHex(x.map((v, i) => v * w + y[i] * (1 - w)));
+}
+
+// Append a two-digit alpha to a 6-digit hex.
+const alpha = (hex, aa) => hex.slice(0, 7) + aa;
+
+/* ------------------------------------------------------------------ *
+ * Workbench colors
+ *
+ * Tiers: editor card (deepest) -> side bar / panel / secondary side bar
+ * cards -> frame (title bar, activity bar, status bar, empty editor area)
+ * -> floating widgets. Borders and indicators use the light accent.
+ * ------------------------------------------------------------------ */
+
+function workbench(p) {
+  const { editor, surface, frame, elevated, seam, fg, muted, gutter, line, accent } = p.ui;
+  const g = p.gold;
+  const s = p.syn;
+  const t = p.term;
+  const ACCENT_FG = '#10142a'; // dark text on the light accent (buttons, badges)
+  const accentSoft = mix(accent, '#ffffff', 0.75); // list/peek text on accent-tinted rows
+  const activeRow = mix(accent, surface, 0.22);
+  const hoverRow = mix(fg, surface, 0.05);
+  const inactiveRow = mix(fg, surface, 0.08);
+
+  return {
+    foreground: mix(fg, surface, 0.85),
+    focusBorder: alpha(accent, '99'),
+    'selection.background': g.sel,
+    'scrollbar.shadow': '#00000080',
+    'widget.border': seam,
+    'widget.shadow': '#00000099',
+    'icon.foreground': mix(fg, surface, 0.8),
+    'sash.hoverBorder': alpha(accent, '99'),
+    'textLink.foreground': accent,
+    'textLink.activeForeground': accentSoft,
+    'textPreformat.foreground': s.type,
+    'textBlockQuote.background': surface,
+    'textBlockQuote.border': alpha(accent, '66'),
+    'textCodeBlock.background': editor,
+    'descriptionForeground': muted,
+    'disabledForeground': alpha(fg, '55'),
+    'errorForeground': STATUS.error,
+
+    // Title bar and command center (frame)
+    'titleBar.activeBackground': frame,
+    'titleBar.activeForeground': fg,
+    'titleBar.inactiveBackground': frame,
+    'titleBar.inactiveForeground': alpha(muted, 'aa'),
+    'titleBar.border': frame,
+    'commandCenter.foreground': fg,
+    'commandCenter.activeForeground': fg,
+    'commandCenter.background': mix(surface, frame, 0.7),
+    'commandCenter.activeBackground': elevated,
+    'commandCenter.border': alpha(accent, '40'),
+    'commandCenter.activeBorder': alpha(accent, '80'),
+    'commandCenter.inactiveBorder': alpha(accent, '20'),
+
+    // Menus
+    'menubar.selectionForeground': fg,
+    'menubar.selectionBackground': alpha(fg, '1a'),
+    'menu.foreground': fg,
+    'menu.background': elevated,
+    'menu.selectionForeground': '#ffffff',
+    'menu.selectionBackground': activeRow,
+    'menu.selectionBorder': '#00000000',
+    'menu.separatorBackground': seam,
+    'menu.border': alpha(accent, '30'),
+
+    // Activity bar (sits on the frame)
+    'activityBar.background': frame,
+    'activityBar.foreground': fg,
+    'activityBar.inactiveForeground': alpha(fg, '66'),
+    'activityBar.activeBorder': accent,
+    'activityBar.activeBackground': frame,
+    'activityBar.border': frame,
+    'activityBarBadge.background': accent,
+    'activityBarBadge.foreground': ACCENT_FG,
+    'activityBarTop.foreground': fg,
+    'activityBarTop.inactiveForeground': alpha(fg, '66'),
+    'activityBarTop.activeBorder': accent,
+
+    // Side bars (primary + secondary) — card tier
+    'sideBar.background': surface,
+    'sideBar.foreground': mix(fg, surface, 0.88),
+    'sideBar.border': seam,
+    'sideBar.dropBackground': alpha(accent, '22'),
+    'sideBarTitle.foreground': fg,
+    'sideBarSectionHeader.background': '#00000000',
+    'sideBarSectionHeader.foreground': fg,
+    'sideBarSectionHeader.border': seam,
+    'sideBarActivityBarTop.border': seam,
+
+    // Lists and trees
+    'list.hoverBackground': hoverRow,
+    'list.hoverForeground': fg,
+    'list.activeSelectionBackground': activeRow,
+    'list.activeSelectionForeground': '#ffffff',
+    'list.activeSelectionIconForeground': '#ffffff',
+    'list.inactiveSelectionBackground': inactiveRow,
+    'list.inactiveSelectionForeground': fg,
+    'list.focusBackground': activeRow,
+    'list.focusForeground': '#ffffff',
+    'list.focusOutline': alpha(accent, '99'),
+    'list.inactiveFocusOutline': alpha(accent, '40'),
+    'list.highlightForeground': g.main,
+    'list.focusHighlightForeground': g.main,
+    'list.dropBackground': alpha(accent, '22'),
+    'list.errorForeground': STATUS.error,
+    'list.warningForeground': STATUS.warning,
+    'tree.indentGuidesStroke': mix(fg, surface, 0.18),
+    'tree.inactiveIndentGuidesStroke': mix(fg, surface, 0.1),
+    'listFilterWidget.background': elevated,
+    'listFilterWidget.outline': alpha(accent, '80'),
+    'listFilterWidget.noMatchesOutline': STATUS.error,
+
+    // Editor groups and tabs — editor card tier
+    'editorGroup.border': seam,
+    'editorGroup.dropBackground': alpha(accent, '1a'),
+    'editorGroup.emptyBackground': frame,
+    'editorGroupHeader.tabsBackground': editor,
+    'editorGroupHeader.tabsBorder': seam,
+    'editorGroupHeader.noTabsBackground': editor,
+    'tab.activeBackground': mix(fg, editor, 0.04),
+    'tab.activeForeground': '#ffffff',
+    'tab.activeBorder': accent,
+    'tab.activeBorderTop': '#00000000',
+    'tab.unfocusedActiveBorder': alpha(accent, '66'),
+    'tab.unfocusedActiveForeground': alpha(fg, 'cc'),
+    'tab.inactiveBackground': editor,
+    'tab.inactiveForeground': alpha(fg, '94'),
+    'tab.unfocusedInactiveForeground': alpha(fg, '70'),
+    'tab.hoverBackground': mix(fg, editor, 0.06),
+    'tab.hoverForeground': fg,
+    'tab.border': alpha(seam, 'b3'),
+    'tab.lastPinnedBorder': alpha(accent, '40'),
+    'tab.selectedBackground': mix(fg, editor, 0.04),
+    'tab.selectedForeground': '#ffffff',
+    'tab.selectedBorderTop': accent,
+    'breadcrumb.background': editor,
+    'breadcrumb.foreground': muted,
+    'breadcrumb.focusForeground': fg,
+    'breadcrumb.activeSelectionForeground': g.main,
+    'breadcrumbPicker.background': elevated,
+
+    // Editor core
+    'editor.background': editor,
+    'editor.foreground': fg,
+    'editorLineNumber.foreground': gutter,
+    'editorLineNumber.activeForeground': g.main,
+    'editorCursor.foreground': g.main,
+    'editorCursor.background': editor,
+    'editor.lineHighlightBackground': line,
+    'editor.lineHighlightBorder': alpha(g.main, '14'),
+    // Selection and everything you search for: gold
+    'editor.selectionBackground': g.sel,
+    'editor.selectionForeground': '#ffffff',
+    'editor.inactiveSelectionBackground': alpha(g.sel, '99'),
+    'editor.selectionHighlightBackground': alpha(g.main, '1f'),
+    'editor.selectionHighlightBorder': alpha(g.main, '66'),
+    'editor.wordHighlightBackground': alpha(g.main, '1a'),
+    'editor.wordHighlightBorder': alpha(g.main, '55'),
+    'editor.wordHighlightStrongBackground': alpha(g.main, '2e'),
+    'editor.wordHighlightStrongBorder': alpha(g.main, '88'),
+    'editor.wordHighlightTextBackground': alpha(g.main, '1a'),
+    'editor.wordHighlightTextBorder': alpha(g.main, '55'),
+    'editor.findMatchBackground': g.find,
+    'editor.findMatchBorder': g.main,
+    'editor.findMatchForeground': '#ffffff',
+    'editor.findMatchHighlightBackground': alpha(g.main, '38'),
+    'editor.findMatchHighlightBorder': alpha(g.main, '8c'),
+    'editor.findRangeHighlightBackground': alpha(fg, '0d'),
+    'editor.rangeHighlightBackground': alpha(g.main, '0f'),
+    'editor.hoverHighlightBackground': alpha(accent, '26'),
+    'editor.linkedEditingBackground': alpha(accent, '22'),
+    'editor.foldBackground': alpha(g.sel, '40'),
+    'editorBracketMatch.background': alpha(g.main, '1f'),
+    'editorBracketMatch.border': alpha(g.main, 'b3'),
+    'editorWhitespace.foreground': alpha(fg, '1f'),
+    'editorIndentGuide.background1': mix(fg, editor, 0.1),
+    'editorIndentGuide.activeBackground1': alpha(accent, '80'),
+    'editorRuler.foreground': mix(fg, editor, 0.1),
+    'editorLink.activeForeground': accent,
+    'editorCodeLens.foreground': muted,
+    'editorLightBulb.foreground': g.main,
+    'editorLightBulbAutoFix.foreground': accent,
+    'editorUnnecessaryCode.opacity': '#000000a0',
+
+    // Gutter
+    'editorGutter.background': editor,
+    'editorGutter.modifiedBackground': STATUS.modified,
+    'editorGutter.addedBackground': STATUS.added,
+    'editorGutter.deletedBackground': STATUS.deleted,
+    'editorGutter.foldingControlForeground': mix(fg, editor, 0.7),
+    'editorGutter.commentRangeForeground': mix(fg, editor, 0.5),
+
+    // Bracket pair colorization
+    'editorBracketHighlight.foreground1': g.main,
+    'editorBracketHighlight.foreground2': s.keyword,
+    'editorBracketHighlight.foreground3': s.func,
+    'editorBracketHighlight.foreground4': s.param,
+    'editorBracketHighlight.foreground5': s.string,
+    'editorBracketHighlight.foreground6': s.number,
+    'editorBracketHighlight.unexpectedBracket.foreground': STATUS.error,
+
+    // Inlay hints, ghost text, sticky scroll
+    'editorInlayHint.foreground': muted,
+    'editorInlayHint.background': alpha(fg, '0f'),
+    'editorInlayHint.typeForeground': muted,
+    'editorInlayHint.parameterForeground': muted,
+    'editorGhostText.foreground': mix(fg, editor, 0.4),
+    'editorStickyScroll.background': editor,
+    'editorStickyScroll.shadow': '#00000099',
+    'editorStickyScrollHover.background': line,
+
+    // Overview ruler and minimap
+    'editorOverviewRuler.background': alpha(editor, '00'),
+    'editorOverviewRuler.border': alpha(seam, '80'),
+    'editorOverviewRuler.findMatchForeground': g.main,
+    'editorOverviewRuler.selectionHighlightForeground': alpha(g.main, 'aa'),
+    'editorOverviewRuler.errorForeground': STATUS.error,
+    'editorOverviewRuler.warningForeground': STATUS.warning,
+    'editorOverviewRuler.infoForeground': STATUS.info,
+    'editorOverviewRuler.modifiedForeground': STATUS.modified,
+    'editorOverviewRuler.addedForeground': STATUS.added,
+    'editorOverviewRuler.deletedForeground': STATUS.deleted,
+    'minimap.background': editor,
+    'minimap.findMatchHighlight': g.main,
+    'minimap.selectionHighlight': g.sel,
+    'minimap.selectionOccurrenceHighlight': alpha(g.main, '80'),
+    'minimap.errorHighlight': STATUS.error,
+    'minimap.warningHighlight': STATUS.warning,
+    'minimapSlider.background': alpha(fg, '14'),
+    'minimapSlider.hoverBackground': alpha(fg, '22'),
+    'minimapSlider.activeBackground': alpha(fg, '30'),
+    'minimapGutter.addedBackground': STATUS.added,
+    'minimapGutter.modifiedBackground': STATUS.modified,
+    'minimapGutter.deletedBackground': STATUS.deleted,
+
+    // Diagnostics
+    'editorError.foreground': STATUS.error,
+    'editorWarning.foreground': STATUS.warning,
+    'editorInfo.foreground': STATUS.info,
+    'editorHint.foreground': muted,
+    'problemsErrorIcon.foreground': STATUS.error,
+    'problemsWarningIcon.foreground': STATUS.warning,
+    'problemsInfoIcon.foreground': STATUS.info,
+
+    // Floating widgets
+    'editorWidget.background': elevated,
+    'editorWidget.foreground': fg,
+    'editorWidget.border': alpha(accent, '40'),
+    'editorWidget.resizeBorder': alpha(accent, '80'),
+    'editorSuggestWidget.background': elevated,
+    'editorSuggestWidget.border': alpha(accent, '40'),
+    'editorSuggestWidget.foreground': fg,
+    'editorSuggestWidget.highlightForeground': g.main,
+    'editorSuggestWidget.focusHighlightForeground': g.main,
+    'editorSuggestWidget.selectedBackground': activeRow,
+    'editorSuggestWidget.selectedForeground': '#ffffff',
+    'editorHoverWidget.background': elevated,
+    'editorHoverWidget.foreground': fg,
+    'editorHoverWidget.border': alpha(accent, '40'),
+    'editorHoverWidget.statusBarBackground': mix(fg, elevated, 0.05),
+    'quickInput.background': elevated,
+    'quickInput.foreground': fg,
+    'quickInputTitle.background': mix(fg, elevated, 0.04),
+    'quickInputList.focusBackground': activeRow,
+    'quickInputList.focusForeground': '#ffffff',
+    'quickInputList.focusIconForeground': '#ffffff',
+    'pickerGroup.border': seam,
+    'pickerGroup.foreground': accent,
+    'debugToolBar.background': elevated,
+    'debugToolBar.border': alpha(accent, '40'),
+    'debugExceptionWidget.background': elevated,
+    'debugExceptionWidget.border': STATUS.error,
+
+    // Peek view
+    'peekView.border': alpha(accent, '80'),
+    'peekViewEditor.background': mix(accent, editor, 0.04),
+    'peekViewEditorGutter.background': mix(accent, editor, 0.04),
+    'peekViewEditor.matchHighlightBackground': alpha(g.main, '40'),
+    'peekViewEditor.matchHighlightBorder': alpha(g.main, '99'),
+    'peekViewResult.background': surface,
+    'peekViewResult.fileForeground': fg,
+    'peekViewResult.lineForeground': mix(fg, surface, 0.75),
+    'peekViewResult.matchHighlightBackground': alpha(g.main, '40'),
+    'peekViewResult.selectionBackground': activeRow,
+    'peekViewResult.selectionForeground': '#ffffff',
+    'peekViewTitle.background': surface,
+    'peekViewTitleLabel.foreground': fg,
+    'peekViewTitleDescription.foreground': muted,
+
+    // Diff
+    'diffEditor.insertedTextBackground': '#4bb85c55',
+    'diffEditor.removedTextBackground': '#e0556655',
+    'diffEditor.insertedLineBackground': '#2a6e3a33',
+    'diffEditor.removedLineBackground': '#7a2a3233',
+    'diffEditorGutter.insertedLineBackground': '#2a6e3a55',
+    'diffEditorGutter.removedLineBackground': '#7a2a3255',
+    'diffEditorOverview.insertedForeground': '#3fb95088',
+    'diffEditorOverview.removedForeground': '#d8505f88',
+    'diffEditor.diagonalFill': seam,
+    'diffEditor.border': seam,
+
+    // Merge conflicts
+    'merge.currentHeaderBackground': '#2a6e3aaa',
+    'merge.currentContentBackground': '#2a6e3a44',
+    'merge.incomingHeaderBackground': alpha(accent, '80'),
+    'merge.incomingContentBackground': alpha(accent, '26'),
+    'merge.commonHeaderBackground': mix(fg, editor, 0.2),
+    'merge.commonContentBackground': mix(fg, editor, 0.08),
+
+    // Panel and terminal — card tier
+    'panel.background': surface,
+    'panel.border': seam,
+    'panel.dropBorder': accent,
+    'panelTitle.activeBorder': accent,
+    'panelTitle.activeForeground': fg,
+    'panelTitle.inactiveForeground': muted,
+    'panelSection.border': seam,
+    'panelSectionHeader.background': surface,
+    'panelInput.border': seam,
+    'outputView.background': surface,
+    'terminal.background': surface,
+    'terminal.foreground': fg,
+    'terminal.border': seam,
+    'terminal.selectionBackground': alpha(g.sel, 'cc'),
+    'terminal.inactiveSelectionBackground': alpha(g.sel, '80'),
+    'terminalCursor.foreground': g.main,
+    'terminalCursor.background': surface,
+    'terminal.ansiBlack': mix(fg, surface, 0.15),
+    'terminal.ansiBrightBlack': muted,
+    'terminal.ansiRed': t.red,
+    'terminal.ansiBrightRed': mix(t.red, '#ffffff', 0.8),
+    'terminal.ansiGreen': t.green,
+    'terminal.ansiBrightGreen': mix(t.green, '#ffffff', 0.8),
+    'terminal.ansiYellow': t.yellow,
+    'terminal.ansiBrightYellow': mix(t.yellow, '#ffffff', 0.8),
+    'terminal.ansiBlue': t.blue,
+    'terminal.ansiBrightBlue': mix(t.blue, '#ffffff', 0.8),
+    'terminal.ansiMagenta': t.magenta,
+    'terminal.ansiBrightMagenta': mix(t.magenta, '#ffffff', 0.8),
+    'terminal.ansiCyan': t.cyan,
+    'terminal.ansiBrightCyan': mix(t.cyan, '#ffffff', 0.8),
+    'terminal.ansiWhite': mix(fg, surface, 0.85),
+    'terminal.ansiBrightWhite': '#ffffff',
+    'terminalCommandDecoration.successBackground': t.green,
+    'terminalCommandDecoration.errorBackground': t.red,
+    'terminalCommandDecoration.defaultBackground': muted,
+    'terminal.findMatchBackground': g.find,
+    'terminal.findMatchBorder': g.main,
+    'terminal.findMatchHighlightBackground': alpha(g.main, '38'),
+    'terminal.findMatchHighlightBorder': alpha(g.main, '8c'),
+    'terminalOverviewRuler.findMatchForeground': g.main,
+
+    // Chat (secondary side bar)
+    'chat.requestBackground': elevated,
+    'chat.requestBorder': alpha(accent, '30'),
+    'chat.avatarBackground': accent,
+    'chat.avatarForeground': ACCENT_FG,
+    'chat.slashCommandBackground': alpha(accent, '30'),
+    'chat.slashCommandForeground': accentSoft,
+    'chat.editedFileForeground': g.main,
+    'interactive.activeCodeBorder': alpha(accent, '80'),
+    'interactive.inactiveCodeBorder': seam,
+    'inlineChat.background': elevated,
+    'inlineChat.border': alpha(accent, '40'),
+    'inlineChatInput.background': surface,
+    'inlineChatInput.border': alpha(accent, '40'),
+    'inlineChatInput.focusBorder': alpha(accent, '99'),
+
+    // Status bar (frame)
+    'statusBar.background': frame,
+    'statusBar.foreground': mix(fg, frame, 0.82),
+    'statusBar.border': frame,
+    'statusBar.focusBorder': alpha(accent, '99'),
+    'statusBar.noFolderBackground': frame,
+    'statusBar.noFolderForeground': mix(fg, frame, 0.82),
+    'statusBar.debuggingBackground': g.find,
+    'statusBar.debuggingForeground': '#ffffff',
+    'statusBar.debuggingBorder': frame,
+    'statusBarItem.hoverBackground': alpha(fg, '14'),
+    'statusBarItem.activeBackground': alpha(fg, '22'),
+    'statusBarItem.remoteBackground': accent,
+    'statusBarItem.remoteForeground': ACCENT_FG,
+    'statusBarItem.remoteHoverBackground': accentSoft,
+    'statusBarItem.errorBackground': STATUS.error,
+    'statusBarItem.errorForeground': ACCENT_FG,
+    'statusBarItem.warningBackground': g.find,
+    'statusBarItem.warningForeground': '#ffffff',
+    'statusBarItem.prominentBackground': alpha(accent, '30'),
+    'statusBarItem.prominentForeground': fg,
+
+    // Buttons, inputs, form controls
+    'button.background': accent,
+    'button.foreground': ACCENT_FG,
+    'button.hoverBackground': accentSoft,
+    'button.border': '#00000000',
+    'button.separator': alpha(ACCENT_FG, '55'),
+    'button.secondaryBackground': elevated,
+    'button.secondaryForeground': fg,
+    'button.secondaryHoverBackground': mix(fg, elevated, 0.08),
+    'input.background': mix(editor, surface, 0.5),
+    'input.foreground': fg,
+    'input.border': seam,
+    'input.placeholderForeground': muted,
+    'inputOption.activeBackground': alpha(accent, '33'),
+    'inputOption.activeBorder': alpha(accent, '99'),
+    'inputOption.activeForeground': '#ffffff',
+    'inputOption.hoverBackground': alpha(fg, '14'),
+    'inputValidation.errorBackground': mix(STATUS.error, editor, 0.15),
+    'inputValidation.errorBorder': STATUS.error,
+    'inputValidation.warningBackground': mix(STATUS.warning, editor, 0.12),
+    'inputValidation.warningBorder': STATUS.warning,
+    'inputValidation.infoBackground': mix(STATUS.info, editor, 0.12),
+    'inputValidation.infoBorder': STATUS.info,
+    'dropdown.background': mix(editor, surface, 0.5),
+    'dropdown.listBackground': elevated,
+    'dropdown.foreground': fg,
+    'dropdown.border': seam,
+    'checkbox.background': mix(editor, surface, 0.5),
+    'checkbox.foreground': fg,
+    'checkbox.border': seam,
+    'checkbox.selectBackground': elevated,
+    'checkbox.selectBorder': accent,
+    'radio.activeBackground': alpha(accent, '33'),
+    'radio.activeBorder': accent,
+    'radio.activeForeground': '#ffffff',
+    'toolbar.hoverBackground': alpha(fg, '14'),
+    'toolbar.activeBackground': alpha(fg, '22'),
+    'keybindingLabel.background': alpha(fg, '12'),
+    'keybindingLabel.foreground': fg,
+    'keybindingLabel.border': alpha(fg, '22'),
+    'keybindingLabel.bottomBorder': '#00000060',
+
+    // Badges, progress, scrollbar
+    'badge.background': accent,
+    'badge.foreground': ACCENT_FG,
+    'progressBar.background': accent,
+    'scrollbarSlider.background': alpha(fg, '22'),
+    'scrollbarSlider.hoverBackground': alpha(fg, '38'),
+    'scrollbarSlider.activeBackground': alpha(fg, '4d'),
+
+    // Notifications
+    'notifications.background': elevated,
+    'notifications.foreground': fg,
+    'notifications.border': seam,
+    'notificationToast.border': alpha(accent, '40'),
+    'notificationCenter.border': alpha(accent, '40'),
+    'notificationCenterHeader.background': frame,
+    'notificationCenterHeader.foreground': fg,
+    'notificationLink.foreground': accent,
+    'notificationsErrorIcon.foreground': STATUS.error,
+    'notificationsWarningIcon.foreground': STATUS.warning,
+    'notificationsInfoIcon.foreground': STATUS.info,
+
+    // Git decorations
+    'gitDecoration.addedResourceForeground': STATUS.added,
+    'gitDecoration.modifiedResourceForeground': g.main,
+    'gitDecoration.stageModifiedResourceForeground': g.main,
+    'gitDecoration.deletedResourceForeground': STATUS.deleted,
+    'gitDecoration.stageDeletedResourceForeground': STATUS.deleted,
+    'gitDecoration.untrackedResourceForeground': STATUS.added,
+    'gitDecoration.ignoredResourceForeground': mix(fg, surface, 0.4),
+    'gitDecoration.conflictingResourceForeground': s.param,
+    'gitDecoration.submoduleResourceForeground': s.func,
+
+    // Settings, welcome, misc
+    'settings.headerForeground': fg,
+    'settings.modifiedItemIndicator': g.main,
+    'settings.focusedRowBackground': alpha(fg, '08'),
+    'settings.rowHoverBackground': alpha(fg, '06'),
+    'welcomePage.tileBackground': surface,
+    'welcomePage.tileHoverBackground': elevated,
+    'welcomePage.tileBorder': seam,
+    'walkThrough.embeddedEditorBackground': editor,
+    'editorGutter.commentGlyphForeground': mix(fg, editor, 0.7),
+
+    // Testing
+    'testing.iconPassed': STATUS.added,
+    'testing.iconFailed': STATUS.error,
+    'testing.iconErrored': STATUS.error,
+    'testing.iconQueued': g.main,
+    'testing.iconSkipped': muted,
+
+    // Charts
+    'charts.foreground': fg,
+    'charts.lines': alpha(fg, '80'),
+    'charts.red': t.red,
+    'charts.blue': t.blue,
+    'charts.yellow': t.yellow,
+    'charts.green': t.green,
+    'charts.orange': s.number,
+    'charts.purple': t.magenta
+  };
+}
+
+/* ------------------------------------------------------------------ *
+ * Builders
+ * ------------------------------------------------------------------ */
+
+function roleMap(p) {
+  return {
+    [ROLE.text]: p.ui.fg,
+    [ROLE.keyword]: p.syn.keyword,
+    [ROLE.string]: p.syn.string,
+    [ROLE.number]: p.syn.number,
+    [ROLE.func]: p.syn.func,
+    [ROLE.type]: p.syn.type,
+    [ROLE.comment]: p.syn.comment,
+    [ROLE.error]: STATUS.error,
+    [ROLE.invalid]: p.ui.fg,
+    [PUNCT]: p.syn.punct,
+    [PARAM]: p.syn.param
+  };
+}
+
+function remap(color, map) {
+  const out = map[color.toLowerCase()] || map[color];
+  if (!out) throw new Error(`No Lantern role for ${color}; add it to ROLE / roleMap()`);
+  return out;
+}
+
+// fontStyle from the catalog is dropped: Lantern ships no italics.
+function tokenColors(p) {
+  const map = roleMap(p);
+  const rule = (r, keepStyle) => {
+    const out = { settings: {} };
+    if (r.name) out.name = r.name;
+    out.scope = r.scope;
+    if (r.settings && r.settings.foreground) out.settings.foreground = remap(r.settings.foreground, map);
+    if (keepStyle && r.settings.fontStyle) out.settings.fontStyle = r.settings.fontStyle;
+    return out;
+  };
+  return [
+    ...BASE_TOKENS.map((r) => rule(r, false)),
+    ...SYNTAX_OVERRIDES.map((r) => rule(r, true))
+  ];
+}
+
+function semanticTokenColors(p) {
+  const map = roleMap(p);
+  const out = {};
+  for (const [k, role] of Object.entries(SEMANTIC)) out[k] = { foreground: remap(role, map) };
+  return out;
+}
+
+const VARIANTS = [
+  { file: 'lantern-nightshade-theme.json', name: 'Lantern Nightshade', palette: PALETTES.nightshade },
+  { file: 'lantern-obsidian-theme.json', name: 'Lantern Obsidian', palette: PALETTES.obsidian },
+  { file: 'lantern-abyss-theme.json', name: 'Lantern Abyss', palette: PALETTES.abyss }
+];
+
+for (const v of VARIANTS) {
+  const theme = {
+    name: v.name,
+    type: 'dark',
+    semanticHighlighting: true,
+    semanticTokenColors: semanticTokenColors(v.palette),
+    colors: workbench(v.palette),
+    tokenColors: tokenColors(v.palette)
+  };
+  const dest = path.join(OUT_DIR, v.file);
+  fs.writeFileSync(dest, JSON.stringify(theme, null, 2) + '\n', 'utf8');
+  console.log(`wrote ${v.file}  (${theme.tokenColors.length} token rules, ${Object.keys(theme.colors).length} colors)`);
+}

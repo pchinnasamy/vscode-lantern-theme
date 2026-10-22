@@ -1,0 +1,61 @@
+{
+  "name": "lantern-theme",
+  "displayName": "Lantern Theme",
+  "description": "Three very dark blue and violet themes for VS Code, lit with gold highlights: Nightshade, Obsidian and Abyss.",
+  "version": "1.0.0",
+  "publisher": "PChin",
+  "license": "MIT",
+  "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#0c0e22",
+    "theme": "dark"
+  },
+  "keywords": [
+    "theme",
+    "dark",
+    "blue",
+    "purple",
+    "violet",
+    "indigo",
+    "gold",
+    "yellow"
+  ],
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Themes"
+  ],
+  "scripts": {
+    "build": "node build-themes.js",
+    "icon": "node scripts/make-icon.js",
+    "package": "vsce package"
+  },
+  "contributes": {
+    "themes": [
+      {
+        "label": "Lantern Nightshade",
+        "uiTheme": "vs-dark",
+        "path": "./themes/lantern-nightshade-theme.json"
+      },
+      {
+        "label": "Lantern Obsidian",
+        "uiTheme": "vs-dark",
+        "path": "./themes/lantern-obsidian-theme.json"
+      },
+      {
+        "label": "Lantern Abyss",
+        "uiTheme": "vs-dark",
+        "path": "./themes/lantern-abyss-theme.json"
+      }
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pchinnasamy/vscode-lantern-theme.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pchinnasamy/vscode-lantern-theme/issues"
+  },
+  "homepage": "https://github.com/pchinnasamy/vscode-lantern-theme#readme"
+}

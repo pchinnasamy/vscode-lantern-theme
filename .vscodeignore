@@ -1,0 +1,11 @@
+# Source of truth / build tooling — not needed at runtime
+build-themes.js
+src/**
+scripts/**
+.vscode/**
+
+# Repo/dev files
+.gitignore
+.gitattributes
+.git/**
+**/*.vsix
