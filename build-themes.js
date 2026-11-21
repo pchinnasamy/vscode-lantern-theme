@@ -1,18 +1,26 @@
 /*
  * Lantern theme builder.
  *
- * Single source of truth for all three themes. Run `node build-themes.js`
+ * Single source of truth for all six themes. Run `node build-themes.js`
  * to regenerate the JSON files in ./themes.
  *
  * Variants produced:
- *   - Lantern Nightshade   (dark blue-violet)
- *   - Lantern Obsidian     (near-black purple)
- *   - Lantern Abyss        (near-black blue)
+ *   - Lantern Nightshade         (dark blue-violet)
+ *   - Lantern Obsidian           (near-black purple)
+ *   - Lantern Abyss              (near-black blue)
+ *   - Lantern Nightshade Light   (near-white, hint of Nightshade's blue-violet)
+ *   - Lantern Obsidian Light     (near-white, hint of Obsidian's purple)
+ *   - Lantern Abyss Light        (near-white, hint of Abyss's blue)
  *
- * All three share ONE syntax catalog (src/token-colors.base.json), written
+ * All variants share ONE syntax catalog (src/token-colors.base.json), written
  * in role colors. Each variant maps those roles onto its own palette, and
  * one workbench template (workbench()) turns a palette into UI colors, so
  * the variants can only differ where their palettes differ.
+ *
+ * Light palettes keep the hue of their dark twin's backgrounds and lift them
+ * almost to white. Gold splits in two there: dark amber (gold.main) for
+ * anything drawn as text or a line, and honey (gold.fill) for fills such as
+ * badges, buttons and highlights, because gold text can't be read on white.
  */
 
 const fs = require('fs');
@@ -70,18 +78,92 @@ const PALETTES = {
       comment: '#5f729c', punct: '#8392b5', param: '#bcaaff'
     },
     term: { red: '#ff7a85', green: '#b4e08a', yellow: '#ffd23f', blue: '#7fb0ff', magenta: '#bcaaff', cyan: '#5ed3e6' }
+  },
+
+  /* Light twins. ui runs from lightest (editor) to deepest (frame); widgets
+   * float above in near-white. gold.main is dark amber (text, cursor, lines),
+   * gold.fill is honey (badges, buttons, highlight fills). */
+  nightshadeLight: {
+    kind: 'light',
+    ui: {
+      editor: '#fafafd', surface: '#f6f6fb', frame: '#eeeff7', elevated: '#fefefe', seam: '#dfe0ee',
+      fg: '#1a1d3d', muted: '#5a5e86', gutter: '#9a9dc0', line: '#f4f4fa', accent: '#4450c4'
+    },
+    gold: { main: '#7d5a00', fill: '#f5d66b', sel: '#f6e3a4', find: '#f0c445' },
+    syn: {
+      keyword: '#4a46c0', func: '#0b6a88', type: '#7d5a00', string: '#36722b', number: '#b0401f',
+      comment: '#63678e', punct: '#555a82', param: '#7a3bb0'
+    },
+    term: { red: '#b5304a', green: '#36722b', yellow: '#7d5a00', blue: '#4a46c0', magenta: '#7a3bb0', cyan: '#0b6a88' }
+  },
+  obsidianLight: {
+    kind: 'light',
+    ui: {
+      editor: '#fbfafd', surface: '#f7f6fb', frame: '#f0eef7', elevated: '#fefefe', seam: '#e3dfee',
+      fg: '#22173a', muted: '#66597f', gutter: '#a69dc2', line: '#f5f4fa', accent: '#6741c4'
+    },
+    gold: { main: '#7d5300', fill: '#f3cf62', sel: '#f4e0a0', find: '#eebf40' },
+    syn: {
+      keyword: '#663bbd', func: '#1a5fa3', type: '#7d5300', string: '#2a7045', number: '#a83558',
+      comment: '#6c5f84', punct: '#615678', param: '#93349f'
+    },
+    term: { red: '#b02d4a', green: '#2a7045', yellow: '#7d5300', blue: '#1a5fa3', magenta: '#663bbd', cyan: '#0f6a72' }
+  },
+  abyssLight: {
+    kind: 'light',
+    ui: {
+      editor: '#fafbfd', surface: '#f5f7fb', frame: '#eef1f8', elevated: '#fefefe', seam: '#dee3f0',
+      fg: '#0d1a33', muted: '#525e78', gutter: '#95a2bf', line: '#f3f5fa', accent: '#1c5bbf'
+    },
+    gold: { main: '#7a5600', fill: '#f2d052', sel: '#f3e1a2', find: '#ecc23e' },
+    syn: {
+      keyword: '#1d55ba', func: '#0a6775', type: '#7a5600', string: '#456b12', number: '#a94322',
+      comment: '#596582', punct: '#4f5b76', param: '#5841b3'
+    },
+    term: { red: '#b23240', green: '#456b12', yellow: '#7a5600', blue: '#1d55ba', magenta: '#5841b3', cyan: '#0a6775' }
   }
 };
 
-// Shared semantic hues (diagnostics, git, diff) — tuned for very dark bases.
-const STATUS = {
-  error: '#ff6b7f',
-  warning: '#ffc34d',
-  info: '#6fb8ff',
-  added: '#7ccf8a',
-  modified: '#6fa8f0',
-  deleted: '#e06a7a'
+// Shared semantic hues (diagnostics, git, diff), one set per kind.
+const STATUS_BY_KIND = {
+  dark: {
+    error: '#ff6b7f',
+    warning: '#ffc34d',
+    info: '#6fb8ff',
+    added: '#7ccf8a',
+    modified: '#6fa8f0',
+    deleted: '#e06a7a'
+  },
+  light: {
+    error: '#c4314b',
+    warning: '#9a6700',
+    info: '#1f6fc4',
+    added: '#2e8540',
+    modified: '#2f6fd0',
+    deleted: '#c4314b'
+  }
 };
+
+// Diff and merge backgrounds, one set per kind.
+const DIFF_BY_KIND = {
+  dark: {
+    insertedText: '#4bb85c55', removedText: '#e0556655',
+    insertedLine: '#2a6e3a33', removedLine: '#7a2a3233',
+    insertedGutter: '#2a6e3a55', removedGutter: '#7a2a3255',
+    insertedRuler: '#3fb95088', removedRuler: '#d8505f88',
+    mergeHeader: '#2a6e3aaa', mergeContent: '#2a6e3a44'
+  },
+  light: {
+    insertedText: '#3fa04f38', removedText: '#d0404a30',
+    insertedLine: '#3fa04f1a', removedLine: '#d0404a17',
+    insertedGutter: '#3fa04f40', removedGutter: '#d0404a38',
+    insertedRuler: '#2e854099', removedRuler: '#c4314b99',
+    mergeHeader: '#3fa04f55', mergeContent: '#3fa04f22'
+  }
+};
+
+const kindOf = (p) => p.kind || 'dark';
+const statusOf = (p) => STATUS_BY_KIND[kindOf(p)];
 
 /* ------------------------------------------------------------------ *
  * Syntax: the base catalog is written in these role colors.
@@ -221,19 +303,40 @@ function workbench(p) {
   const g = p.gold;
   const s = p.syn;
   const t = p.term;
-  const ACCENT_FG = '#10142a'; // dark text on the light accent (buttons, badges)
-  const accentSoft = mix(accent, '#ffffff', 0.75); // list/peek text on accent-tinted rows
-  const activeRow = mix(accent, surface, 0.22);
-  const hoverRow = mix(fg, surface, 0.05);
-  const inactiveRow = mix(fg, surface, 0.08);
+  const light = kindOf(p) === 'light';
+  const STATUS = statusOf(p);
+  const DIFF = DIFF_BY_KIND[kindOf(p)];
+
+  // gold.main is drawn as text or lines; fill is the gold used as a background.
+  const fill = g.fill || g.main;
+  // Highlight fills: on light themes honey needs about twice the opacity to show.
+  const hl = (aa) => light
+    ? alpha(fill, Math.min(255, Math.round(parseInt(aa, 16) * 2.2)).toString(16).padStart(2, '0'))
+    : alpha(g.main, aa);
+
+  // Kind-dependent constants (dark value first).
+  const STRONG = light ? fg : '#ffffff'; // text on selected rows, tabs, matches
+  const ON_FILL = light ? fg : '#10142a'; // text on gold buttons and badges
+  const ON_ACCENT = light ? '#ffffff' : '#10142a'; // text on the accent (remote item, chat avatar)
+  const ON_ERROR = light ? '#ffffff' : '#10142a';
+  const SHADOW = light ? alpha(fg, '24') : '#00000099';
+  const SHADOW_SOFT = light ? alpha(fg, '14') : '#00000080';
+  const BRIGHT = light ? fg : '#ffffff'; // what terminal bright colors mix toward
+  const accentSoft = light ? mix(accent, fg, 0.7) : mix(accent, '#ffffff', 0.75);
+  // Badges, buttons and popup borders share the highlight gold.
+  const goldHover = light ? mix(fill, g.main, 0.85) : mix(g.main, '#ffffff', 0.8);
+  const popBorder = light ? alpha(g.main, '80') : alpha(g.main, '59');
+  const activeRow = mix(accent, surface, light ? 0.14 : 0.22);
+  const hoverRow = mix(fg, surface, light ? 0.04 : 0.05);
+  const inactiveRow = mix(fg, surface, light ? 0.06 : 0.08);
 
   return {
     foreground: mix(fg, surface, 0.85),
     focusBorder: alpha(accent, '99'),
     'selection.background': g.sel,
-    'scrollbar.shadow': '#00000080',
+    'scrollbar.shadow': SHADOW_SOFT,
     'widget.border': seam,
-    'widget.shadow': '#00000099',
+    'widget.shadow': SHADOW,
     'icon.foreground': mix(fg, surface, 0.8),
     'sash.hoverBorder': alpha(accent, '99'),
     'textLink.foreground': accent,
@@ -265,11 +368,11 @@ function workbench(p) {
     'menubar.selectionBackground': alpha(fg, '1a'),
     'menu.foreground': fg,
     'menu.background': elevated,
-    'menu.selectionForeground': '#ffffff',
+    'menu.selectionForeground': STRONG,
     'menu.selectionBackground': activeRow,
     'menu.selectionBorder': '#00000000',
     'menu.separatorBackground': seam,
-    'menu.border': alpha(accent, '30'),
+    'menu.border': popBorder,
 
     // Activity bar (sits on the frame)
     'activityBar.background': frame,
@@ -278,8 +381,8 @@ function workbench(p) {
     'activityBar.activeBorder': accent,
     'activityBar.activeBackground': frame,
     'activityBar.border': frame,
-    'activityBarBadge.background': accent,
-    'activityBarBadge.foreground': ACCENT_FG,
+    'activityBarBadge.background': fill,
+    'activityBarBadge.foreground': ON_FILL,
     'activityBarTop.foreground': fg,
     'activityBarTop.inactiveForeground': alpha(fg, '66'),
     'activityBarTop.activeBorder': accent,
@@ -299,12 +402,12 @@ function workbench(p) {
     'list.hoverBackground': hoverRow,
     'list.hoverForeground': fg,
     'list.activeSelectionBackground': activeRow,
-    'list.activeSelectionForeground': '#ffffff',
-    'list.activeSelectionIconForeground': '#ffffff',
+    'list.activeSelectionForeground': STRONG,
+    'list.activeSelectionIconForeground': STRONG,
     'list.inactiveSelectionBackground': inactiveRow,
     'list.inactiveSelectionForeground': fg,
     'list.focusBackground': activeRow,
-    'list.focusForeground': '#ffffff',
+    'list.focusForeground': STRONG,
     'list.focusOutline': alpha(accent, '99'),
     'list.inactiveFocusOutline': alpha(accent, '40'),
     'list.highlightForeground': g.main,
@@ -326,7 +429,7 @@ function workbench(p) {
     'editorGroupHeader.tabsBorder': seam,
     'editorGroupHeader.noTabsBackground': editor,
     'tab.activeBackground': mix(fg, editor, 0.04),
-    'tab.activeForeground': '#ffffff',
+    'tab.activeForeground': STRONG,
     'tab.activeBorder': accent,
     'tab.activeBorderTop': '#00000000',
     'tab.unfocusedActiveBorder': alpha(accent, '66'),
@@ -339,7 +442,7 @@ function workbench(p) {
     'tab.border': alpha(seam, 'b3'),
     'tab.lastPinnedBorder': alpha(accent, '40'),
     'tab.selectedBackground': mix(fg, editor, 0.04),
-    'tab.selectedForeground': '#ffffff',
+    'tab.selectedForeground': STRONG,
     'tab.selectedBorderTop': accent,
     'breadcrumb.background': editor,
     'breadcrumb.foreground': muted,
@@ -358,27 +461,27 @@ function workbench(p) {
     'editor.lineHighlightBorder': alpha(g.main, '14'),
     // Selection and everything you search for: gold
     'editor.selectionBackground': g.sel,
-    'editor.selectionForeground': '#ffffff',
+    'editor.selectionForeground': STRONG,
     'editor.inactiveSelectionBackground': alpha(g.sel, '99'),
-    'editor.selectionHighlightBackground': alpha(g.main, '1f'),
+    'editor.selectionHighlightBackground': hl('1f'),
     'editor.selectionHighlightBorder': alpha(g.main, '66'),
-    'editor.wordHighlightBackground': alpha(g.main, '1a'),
+    'editor.wordHighlightBackground': hl('1a'),
     'editor.wordHighlightBorder': alpha(g.main, '55'),
-    'editor.wordHighlightStrongBackground': alpha(g.main, '2e'),
+    'editor.wordHighlightStrongBackground': hl('2e'),
     'editor.wordHighlightStrongBorder': alpha(g.main, '88'),
-    'editor.wordHighlightTextBackground': alpha(g.main, '1a'),
+    'editor.wordHighlightTextBackground': hl('1a'),
     'editor.wordHighlightTextBorder': alpha(g.main, '55'),
     'editor.findMatchBackground': g.find,
     'editor.findMatchBorder': g.main,
-    'editor.findMatchForeground': '#ffffff',
-    'editor.findMatchHighlightBackground': alpha(g.main, '38'),
+    'editor.findMatchForeground': STRONG,
+    'editor.findMatchHighlightBackground': hl('38'),
     'editor.findMatchHighlightBorder': alpha(g.main, '8c'),
     'editor.findRangeHighlightBackground': alpha(fg, '0d'),
-    'editor.rangeHighlightBackground': alpha(g.main, '0f'),
+    'editor.rangeHighlightBackground': hl('0f'),
     'editor.hoverHighlightBackground': alpha(accent, '26'),
     'editor.linkedEditingBackground': alpha(accent, '22'),
     'editor.foldBackground': alpha(g.sel, '40'),
-    'editorBracketMatch.background': alpha(g.main, '1f'),
+    'editorBracketMatch.background': hl('1f'),
     'editorBracketMatch.border': alpha(g.main, 'b3'),
     'editorWhitespace.foreground': alpha(fg, '1f'),
     'editorIndentGuide.background1': mix(fg, editor, 0.1),
@@ -414,7 +517,7 @@ function workbench(p) {
     'editorInlayHint.parameterForeground': muted,
     'editorGhostText.foreground': mix(fg, editor, 0.4),
     'editorStickyScroll.background': editor,
-    'editorStickyScroll.shadow': '#00000099',
+    'editorStickyScroll.shadow': SHADOW,
     'editorStickyScrollHover.background': line,
 
     // Overview ruler and minimap
@@ -453,29 +556,29 @@ function workbench(p) {
     // Floating widgets
     'editorWidget.background': elevated,
     'editorWidget.foreground': fg,
-    'editorWidget.border': alpha(accent, '40'),
+    'editorWidget.border': popBorder,
     'editorWidget.resizeBorder': alpha(accent, '80'),
     'editorSuggestWidget.background': elevated,
-    'editorSuggestWidget.border': alpha(accent, '40'),
+    'editorSuggestWidget.border': popBorder,
     'editorSuggestWidget.foreground': fg,
     'editorSuggestWidget.highlightForeground': g.main,
     'editorSuggestWidget.focusHighlightForeground': g.main,
     'editorSuggestWidget.selectedBackground': activeRow,
-    'editorSuggestWidget.selectedForeground': '#ffffff',
+    'editorSuggestWidget.selectedForeground': STRONG,
     'editorHoverWidget.background': elevated,
     'editorHoverWidget.foreground': fg,
-    'editorHoverWidget.border': alpha(accent, '40'),
+    'editorHoverWidget.border': popBorder,
     'editorHoverWidget.statusBarBackground': mix(fg, elevated, 0.05),
     'quickInput.background': elevated,
     'quickInput.foreground': fg,
     'quickInputTitle.background': mix(fg, elevated, 0.04),
     'quickInputList.focusBackground': activeRow,
-    'quickInputList.focusForeground': '#ffffff',
-    'quickInputList.focusIconForeground': '#ffffff',
+    'quickInputList.focusForeground': STRONG,
+    'quickInputList.focusIconForeground': STRONG,
     'pickerGroup.border': seam,
     'pickerGroup.foreground': accent,
     'debugToolBar.background': elevated,
-    'debugToolBar.border': alpha(accent, '40'),
+    'debugToolBar.border': popBorder,
     'debugExceptionWidget.background': elevated,
     'debugExceptionWidget.border': STATUS.error,
 
@@ -483,33 +586,33 @@ function workbench(p) {
     'peekView.border': alpha(accent, '80'),
     'peekViewEditor.background': mix(accent, editor, 0.04),
     'peekViewEditorGutter.background': mix(accent, editor, 0.04),
-    'peekViewEditor.matchHighlightBackground': alpha(g.main, '40'),
+    'peekViewEditor.matchHighlightBackground': hl('40'),
     'peekViewEditor.matchHighlightBorder': alpha(g.main, '99'),
     'peekViewResult.background': surface,
     'peekViewResult.fileForeground': fg,
     'peekViewResult.lineForeground': mix(fg, surface, 0.75),
-    'peekViewResult.matchHighlightBackground': alpha(g.main, '40'),
+    'peekViewResult.matchHighlightBackground': hl('40'),
     'peekViewResult.selectionBackground': activeRow,
-    'peekViewResult.selectionForeground': '#ffffff',
+    'peekViewResult.selectionForeground': STRONG,
     'peekViewTitle.background': surface,
     'peekViewTitleLabel.foreground': fg,
     'peekViewTitleDescription.foreground': muted,
 
     // Diff
-    'diffEditor.insertedTextBackground': '#4bb85c55',
-    'diffEditor.removedTextBackground': '#e0556655',
-    'diffEditor.insertedLineBackground': '#2a6e3a33',
-    'diffEditor.removedLineBackground': '#7a2a3233',
-    'diffEditorGutter.insertedLineBackground': '#2a6e3a55',
-    'diffEditorGutter.removedLineBackground': '#7a2a3255',
-    'diffEditorOverview.insertedForeground': '#3fb95088',
-    'diffEditorOverview.removedForeground': '#d8505f88',
+    'diffEditor.insertedTextBackground': DIFF.insertedText,
+    'diffEditor.removedTextBackground': DIFF.removedText,
+    'diffEditor.insertedLineBackground': DIFF.insertedLine,
+    'diffEditor.removedLineBackground': DIFF.removedLine,
+    'diffEditorGutter.insertedLineBackground': DIFF.insertedGutter,
+    'diffEditorGutter.removedLineBackground': DIFF.removedGutter,
+    'diffEditorOverview.insertedForeground': DIFF.insertedRuler,
+    'diffEditorOverview.removedForeground': DIFF.removedRuler,
     'diffEditor.diagonalFill': seam,
     'diffEditor.border': seam,
 
     // Merge conflicts
-    'merge.currentHeaderBackground': '#2a6e3aaa',
-    'merge.currentContentBackground': '#2a6e3a44',
+    'merge.currentHeaderBackground': DIFF.mergeHeader,
+    'merge.currentContentBackground': DIFF.mergeContent,
     'merge.incomingHeaderBackground': alpha(accent, '80'),
     'merge.incomingContentBackground': alpha(accent, '26'),
     'merge.commonHeaderBackground': mix(fg, editor, 0.2),
@@ -533,28 +636,28 @@ function workbench(p) {
     'terminal.inactiveSelectionBackground': alpha(g.sel, '80'),
     'terminalCursor.foreground': g.main,
     'terminalCursor.background': surface,
-    'terminal.ansiBlack': mix(fg, surface, 0.15),
+    'terminal.ansiBlack': light ? fg : mix(fg, surface, 0.15),
     'terminal.ansiBrightBlack': muted,
     'terminal.ansiRed': t.red,
-    'terminal.ansiBrightRed': mix(t.red, '#ffffff', 0.8),
+    'terminal.ansiBrightRed': mix(t.red, BRIGHT, 0.8),
     'terminal.ansiGreen': t.green,
-    'terminal.ansiBrightGreen': mix(t.green, '#ffffff', 0.8),
+    'terminal.ansiBrightGreen': mix(t.green, BRIGHT, 0.8),
     'terminal.ansiYellow': t.yellow,
-    'terminal.ansiBrightYellow': mix(t.yellow, '#ffffff', 0.8),
+    'terminal.ansiBrightYellow': mix(t.yellow, BRIGHT, 0.8),
     'terminal.ansiBlue': t.blue,
-    'terminal.ansiBrightBlue': mix(t.blue, '#ffffff', 0.8),
+    'terminal.ansiBrightBlue': mix(t.blue, BRIGHT, 0.8),
     'terminal.ansiMagenta': t.magenta,
-    'terminal.ansiBrightMagenta': mix(t.magenta, '#ffffff', 0.8),
+    'terminal.ansiBrightMagenta': mix(t.magenta, BRIGHT, 0.8),
     'terminal.ansiCyan': t.cyan,
-    'terminal.ansiBrightCyan': mix(t.cyan, '#ffffff', 0.8),
-    'terminal.ansiWhite': mix(fg, surface, 0.85),
-    'terminal.ansiBrightWhite': '#ffffff',
+    'terminal.ansiBrightCyan': mix(t.cyan, BRIGHT, 0.8),
+    'terminal.ansiWhite': light ? mix(fg, surface, 0.55) : mix(fg, surface, 0.85),
+    'terminal.ansiBrightWhite': light ? mix(fg, surface, 0.35) : STRONG,
     'terminalCommandDecoration.successBackground': t.green,
     'terminalCommandDecoration.errorBackground': t.red,
     'terminalCommandDecoration.defaultBackground': muted,
     'terminal.findMatchBackground': g.find,
     'terminal.findMatchBorder': g.main,
-    'terminal.findMatchHighlightBackground': alpha(g.main, '38'),
+    'terminal.findMatchHighlightBackground': hl('38'),
     'terminal.findMatchHighlightBorder': alpha(g.main, '8c'),
     'terminalOverviewRuler.findMatchForeground': g.main,
 
@@ -562,14 +665,14 @@ function workbench(p) {
     'chat.requestBackground': elevated,
     'chat.requestBorder': alpha(accent, '30'),
     'chat.avatarBackground': accent,
-    'chat.avatarForeground': ACCENT_FG,
+    'chat.avatarForeground': ON_ACCENT,
     'chat.slashCommandBackground': alpha(accent, '30'),
     'chat.slashCommandForeground': accentSoft,
     'chat.editedFileForeground': g.main,
     'interactive.activeCodeBorder': alpha(accent, '80'),
     'interactive.inactiveCodeBorder': seam,
     'inlineChat.background': elevated,
-    'inlineChat.border': alpha(accent, '40'),
+    'inlineChat.border': popBorder,
     'inlineChatInput.background': surface,
     'inlineChatInput.border': alpha(accent, '40'),
     'inlineChatInput.focusBorder': alpha(accent, '99'),
@@ -582,26 +685,26 @@ function workbench(p) {
     'statusBar.noFolderBackground': frame,
     'statusBar.noFolderForeground': mix(fg, frame, 0.82),
     'statusBar.debuggingBackground': g.find,
-    'statusBar.debuggingForeground': '#ffffff',
+    'statusBar.debuggingForeground': STRONG,
     'statusBar.debuggingBorder': frame,
     'statusBarItem.hoverBackground': alpha(fg, '14'),
     'statusBarItem.activeBackground': alpha(fg, '22'),
     'statusBarItem.remoteBackground': accent,
-    'statusBarItem.remoteForeground': ACCENT_FG,
+    'statusBarItem.remoteForeground': ON_ACCENT,
     'statusBarItem.remoteHoverBackground': accentSoft,
     'statusBarItem.errorBackground': STATUS.error,
-    'statusBarItem.errorForeground': ACCENT_FG,
+    'statusBarItem.errorForeground': ON_ERROR,
     'statusBarItem.warningBackground': g.find,
-    'statusBarItem.warningForeground': '#ffffff',
+    'statusBarItem.warningForeground': STRONG,
     'statusBarItem.prominentBackground': alpha(accent, '30'),
     'statusBarItem.prominentForeground': fg,
 
     // Buttons, inputs, form controls
-    'button.background': accent,
-    'button.foreground': ACCENT_FG,
-    'button.hoverBackground': accentSoft,
+    'button.background': fill,
+    'button.foreground': ON_FILL,
+    'button.hoverBackground': goldHover,
     'button.border': '#00000000',
-    'button.separator': alpha(ACCENT_FG, '55'),
+    'button.separator': alpha(ON_FILL, '55'),
     'button.secondaryBackground': elevated,
     'button.secondaryForeground': fg,
     'button.secondaryHoverBackground': mix(fg, elevated, 0.08),
@@ -611,7 +714,7 @@ function workbench(p) {
     'input.placeholderForeground': muted,
     'inputOption.activeBackground': alpha(accent, '33'),
     'inputOption.activeBorder': alpha(accent, '99'),
-    'inputOption.activeForeground': '#ffffff',
+    'inputOption.activeForeground': STRONG,
     'inputOption.hoverBackground': alpha(fg, '14'),
     'inputValidation.errorBackground': mix(STATUS.error, editor, 0.15),
     'inputValidation.errorBorder': STATUS.error,
@@ -630,17 +733,27 @@ function workbench(p) {
     'checkbox.selectBorder': accent,
     'radio.activeBackground': alpha(accent, '33'),
     'radio.activeBorder': accent,
-    'radio.activeForeground': '#ffffff',
+    'radio.activeForeground': STRONG,
     'toolbar.hoverBackground': alpha(fg, '14'),
     'toolbar.activeBackground': alpha(fg, '22'),
+    // Extension view buttons (Install, Update, ...)
+    'extensionButton.background': fill,
+    'extensionButton.foreground': ON_FILL,
+    'extensionButton.hoverBackground': goldHover,
+    'extensionButton.separator': alpha(ON_FILL, '55'),
+    'extensionButton.prominentBackground': fill,
+    'extensionButton.prominentForeground': ON_FILL,
+    'extensionButton.prominentHoverBackground': goldHover,
+    'extensionBadge.remoteBackground': fill,
+    'extensionBadge.remoteForeground': ON_FILL,
     'keybindingLabel.background': alpha(fg, '12'),
     'keybindingLabel.foreground': fg,
     'keybindingLabel.border': alpha(fg, '22'),
-    'keybindingLabel.bottomBorder': '#00000060',
+    'keybindingLabel.bottomBorder': light ? SHADOW_SOFT : '#00000060',
 
     // Badges, progress, scrollbar
-    'badge.background': accent,
-    'badge.foreground': ACCENT_FG,
+    'badge.background': fill,
+    'badge.foreground': ON_FILL,
     'progressBar.background': accent,
     'scrollbarSlider.background': alpha(fg, '22'),
     'scrollbarSlider.hoverBackground': alpha(fg, '38'),
@@ -650,14 +763,14 @@ function workbench(p) {
     'notifications.background': elevated,
     'notifications.foreground': fg,
     'notifications.border': seam,
-    'notificationToast.border': alpha(accent, '40'),
-    'notificationCenter.border': alpha(accent, '40'),
+    'notificationToast.border': popBorder,
+    'notificationCenter.border': popBorder,
     'notificationCenterHeader.background': frame,
     'notificationCenterHeader.foreground': fg,
-    'notificationLink.foreground': accent,
+    'notificationLink.foreground': g.main,
     'notificationsErrorIcon.foreground': STATUS.error,
     'notificationsWarningIcon.foreground': STATUS.warning,
-    'notificationsInfoIcon.foreground': STATUS.info,
+    'notificationsInfoIcon.foreground': g.main,
 
     // Git decorations
     'gitDecoration.addedResourceForeground': STATUS.added,
@@ -713,7 +826,7 @@ function roleMap(p) {
     [ROLE.func]: p.syn.func,
     [ROLE.type]: p.syn.type,
     [ROLE.comment]: p.syn.comment,
-    [ROLE.error]: STATUS.error,
+    [ROLE.error]: statusOf(p).error,
     [ROLE.invalid]: p.ui.fg,
     [PUNCT]: p.syn.punct,
     [PARAM]: p.syn.param
@@ -753,13 +866,16 @@ function semanticTokenColors(p) {
 const VARIANTS = [
   { file: 'lantern-nightshade-theme.json', name: 'Lantern Nightshade', palette: PALETTES.nightshade },
   { file: 'lantern-obsidian-theme.json', name: 'Lantern Obsidian', palette: PALETTES.obsidian },
-  { file: 'lantern-abyss-theme.json', name: 'Lantern Abyss', palette: PALETTES.abyss }
+  { file: 'lantern-abyss-theme.json', name: 'Lantern Abyss', palette: PALETTES.abyss },
+  { file: 'lantern-nightshade-light-theme.json', name: 'Lantern Nightshade Light', palette: PALETTES.nightshadeLight },
+  { file: 'lantern-obsidian-light-theme.json', name: 'Lantern Obsidian Light', palette: PALETTES.obsidianLight },
+  { file: 'lantern-abyss-light-theme.json', name: 'Lantern Abyss Light', palette: PALETTES.abyssLight }
 ];
 
 for (const v of VARIANTS) {
   const theme = {
     name: v.name,
-    type: 'dark',
+    type: kindOf(v.palette),
     semanticHighlighting: true,
     semanticTokenColors: semanticTokenColors(v.palette),
     colors: workbench(v.palette),
