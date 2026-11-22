@@ -2,6 +2,8 @@
 build-themes.js
 src/**
 scripts/**
+# README images load from GitHub, so they don't need to ship in the package
+images/**
 .vscode/**
 
 # Repo/dev files

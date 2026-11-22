@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.1
+
+- The light themes' backgrounds have more of their dark twin's hue, so Nightshade Light reads as blue-violet, Obsidian Light as purple and Abyss Light as blue at first glance instead of near-grey.
+- Slightly darker error red in the light themes, and darker comments in Nightshade Light, to keep 4.5:1 contrast on the new backgrounds.
+- New README image showing all six themes.
+
 ## 1.2.0
 
 - New light themes: Lantern Nightshade Light, Lantern Obsidian Light and Lantern Abyss Light. Their backgrounds are near-white with a hint of the matching dark theme's hue.

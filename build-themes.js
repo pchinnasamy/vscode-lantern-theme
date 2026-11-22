@@ -86,21 +86,21 @@ const PALETTES = {
   nightshadeLight: {
     kind: 'light',
     ui: {
-      editor: '#fafafd', surface: '#f6f6fb', frame: '#eeeff7', elevated: '#fefefe', seam: '#dfe0ee',
-      fg: '#1a1d3d', muted: '#5a5e86', gutter: '#9a9dc0', line: '#f4f4fa', accent: '#4450c4'
+      editor: '#f3f4fc', surface: '#edeefa', frame: '#e3e5f7', elevated: '#fbfbfe', seam: '#d3d5ee',
+      fg: '#1a1d3d', muted: '#5a5e86', gutter: '#9a9dc0', line: '#eaebfa', accent: '#4450c4'
     },
     gold: { main: '#7d5a00', fill: '#f5d66b', sel: '#f6e3a4', find: '#f0c445' },
     syn: {
       keyword: '#4a46c0', func: '#0b6a88', type: '#7d5a00', string: '#36722b', number: '#b0401f',
-      comment: '#63678e', punct: '#555a82', param: '#7a3bb0'
+      comment: '#5c6088', punct: '#555a82', param: '#7a3bb0'
     },
     term: { red: '#b5304a', green: '#36722b', yellow: '#7d5a00', blue: '#4a46c0', magenta: '#7a3bb0', cyan: '#0b6a88' }
   },
   obsidianLight: {
     kind: 'light',
     ui: {
-      editor: '#fbfafd', surface: '#f7f6fb', frame: '#f0eef7', elevated: '#fefefe', seam: '#e3dfee',
-      fg: '#22173a', muted: '#66597f', gutter: '#a69dc2', line: '#f5f4fa', accent: '#6741c4'
+      editor: '#f6f3fc', surface: '#f1edfa', frame: '#e8e3f7', elevated: '#fcfbfe', seam: '#dad3ee',
+      fg: '#22173a', muted: '#66597f', gutter: '#a69dc2', line: '#eeeafa', accent: '#6741c4'
     },
     gold: { main: '#7d5300', fill: '#f3cf62', sel: '#f4e0a0', find: '#eebf40' },
     syn: {
@@ -112,8 +112,8 @@ const PALETTES = {
   abyssLight: {
     kind: 'light',
     ui: {
-      editor: '#fafbfd', surface: '#f5f7fb', frame: '#eef1f8', elevated: '#fefefe', seam: '#dee3f0',
-      fg: '#0d1a33', muted: '#525e78', gutter: '#95a2bf', line: '#f3f5fa', accent: '#1c5bbf'
+      editor: '#f3f6fc', surface: '#edf1fa', frame: '#e3e9f7', elevated: '#fbfcfe', seam: '#d3dbee',
+      fg: '#0d1a33', muted: '#525e78', gutter: '#95a2bf', line: '#eaeffa', accent: '#1c5bbf'
     },
     gold: { main: '#7a5600', fill: '#f2d052', sel: '#f3e1a2', find: '#ecc23e' },
     syn: {
@@ -135,12 +135,12 @@ const STATUS_BY_KIND = {
     deleted: '#e06a7a'
   },
   light: {
-    error: '#c4314b',
+    error: '#b82a44',
     warning: '#9a6700',
     info: '#1f6fc4',
     added: '#2e8540',
     modified: '#2f6fd0',
-    deleted: '#c4314b'
+    deleted: '#b82a44'
   }
 };
 
@@ -157,7 +157,7 @@ const DIFF_BY_KIND = {
     insertedText: '#3fa04f38', removedText: '#d0404a30',
     insertedLine: '#3fa04f1a', removedLine: '#d0404a17',
     insertedGutter: '#3fa04f40', removedGutter: '#d0404a38',
-    insertedRuler: '#2e854099', removedRuler: '#c4314b99',
+    insertedRuler: '#2e854099', removedRuler: '#b82a4499',
     mergeHeader: '#3fa04f55', mergeContent: '#3fa04f22'
   }
 };

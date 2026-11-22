@@ -2,6 +2,8 @@
 
 Three very dark blue and violet themes for VS Code, lit with gold, and a near-white light twin for each.
 
+![Lantern Abyss, Obsidian and Nightshade, followed by their light twins](images/lantern-themes.png)
+
 The backgrounds stay deep and cool, so the things you look for stand out in gold: the cursor, the active line number, your selection, find matches, other occurrences of the word under the cursor, badges, buttons and popups. Tabs, focus borders and the activity bar indicator use a soft light blue or violet.
 
 ## Variants
@@ -20,9 +22,9 @@ Each dark theme has a light twin. The backgrounds keep the hue of the dark theme
 
 | Theme | Shade | Editor | Accent | Amber | Honey |
 |---|---|---|---|---|---|
-| **Lantern Nightshade Light** | Hint of blue-violet | `#fafafd` | `#4450c4` | `#7d5a00` | `#f5d66b` |
-| **Lantern Obsidian Light** | Hint of purple | `#fbfafd` | `#6741c4` | `#7d5300` | `#f3cf62` |
-| **Lantern Abyss Light** | Hint of blue | `#fafbfd` | `#1c5bbf` | `#7a5600` | `#f2d052` |
+| **Lantern Nightshade Light** | Hint of blue-violet | `#f3f4fc` | `#4450c4` | `#7d5a00` | `#f5d66b` |
+| **Lantern Obsidian Light** | Hint of purple | `#f6f3fc` | `#6741c4` | `#7d5300` | `#f3cf62` |
+| **Lantern Abyss Light** | Hint of blue | `#f3f6fc` | `#1c5bbf` | `#7a5600` | `#f2d052` |
 
 ## Features
 
@@ -44,6 +46,7 @@ All six themes are generated from one source:
 ```
 npm run build      # regenerate themes/*.json
 npm run icon       # regenerate icon.png
+npm run screenshot # regenerate images/lantern-themes.png (needs Edge or Chrome)
 npm run package    # build the .vsix (needs @vscode/vsce)
 ```
 
