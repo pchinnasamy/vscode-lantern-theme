@@ -86,8 +86,8 @@ const PALETTES = {
   nightshadeLight: {
     kind: 'light',
     ui: {
-      editor: '#f3f4fc', surface: '#edeefa', frame: '#e3e5f7', elevated: '#fbfbfe', seam: '#d3d5ee',
-      fg: '#1a1d3d', muted: '#5a5e86', gutter: '#9a9dc0', line: '#eaebfa', accent: '#4450c4'
+      editor: '#f8f9fd', surface: '#edeefa', frame: '#e3e5f7', elevated: '#fbfbfe', seam: '#d3d5ee',
+      fg: '#1a1d3d', muted: '#5a5e86', gutter: '#9a9dc0', line: '#eff0fb', accent: '#4450c4'
     },
     gold: { main: '#7d5a00', fill: '#f5d66b', sel: '#f6e3a4', find: '#f0c445' },
     syn: {
@@ -99,8 +99,8 @@ const PALETTES = {
   obsidianLight: {
     kind: 'light',
     ui: {
-      editor: '#f6f3fc', surface: '#f1edfa', frame: '#e8e3f7', elevated: '#fcfbfe', seam: '#dad3ee',
-      fg: '#22173a', muted: '#66597f', gutter: '#a69dc2', line: '#eeeafa', accent: '#6741c4'
+      editor: '#f9f8fd', surface: '#f1edfa', frame: '#e8e3f7', elevated: '#fcfbfe', seam: '#dad3ee',
+      fg: '#22173a', muted: '#66597f', gutter: '#a69dc2', line: '#f2effb', accent: '#6741c4'
     },
     gold: { main: '#7d5300', fill: '#f3cf62', sel: '#f4e0a0', find: '#eebf40' },
     syn: {
@@ -112,8 +112,8 @@ const PALETTES = {
   abyssLight: {
     kind: 'light',
     ui: {
-      editor: '#f3f6fc', surface: '#edf1fa', frame: '#e3e9f7', elevated: '#fbfcfe', seam: '#d3dbee',
-      fg: '#0d1a33', muted: '#525e78', gutter: '#95a2bf', line: '#eaeffa', accent: '#1c5bbf'
+      editor: '#f8fafd', surface: '#edf1fa', frame: '#e3e9f7', elevated: '#fbfcfe', seam: '#d3dbee',
+      fg: '#0d1a33', muted: '#525e78', gutter: '#95a2bf', line: '#eff3fb', accent: '#1c5bbf'
     },
     gold: { main: '#7a5600', fill: '#f2d052', sel: '#f3e1a2', find: '#ecc23e' },
     syn: {

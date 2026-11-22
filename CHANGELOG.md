@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.2
+
+- Lighter editor background in the light themes. The side bars, panel and frame keep their tint, so the editor stands out as the lightest card.
+
 ## 1.2.1
 
 - The light themes' backgrounds have more of their dark twin's hue, so Nightshade Light reads as blue-violet, Obsidian Light as purple and Abyss Light as blue at first glance instead of near-grey.

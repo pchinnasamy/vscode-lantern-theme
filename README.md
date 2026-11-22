@@ -22,9 +22,9 @@ Each dark theme has a light twin. The backgrounds keep the hue of the dark theme
 
 | Theme | Shade | Editor | Accent | Amber | Honey |
 |---|---|---|---|---|---|
-| **Lantern Nightshade Light** | Hint of blue-violet | `#f3f4fc` | `#4450c4` | `#7d5a00` | `#f5d66b` |
-| **Lantern Obsidian Light** | Hint of purple | `#f6f3fc` | `#6741c4` | `#7d5300` | `#f3cf62` |
-| **Lantern Abyss Light** | Hint of blue | `#f3f6fc` | `#1c5bbf` | `#7a5600` | `#f2d052` |
+| **Lantern Nightshade Light** | Hint of blue-violet | `#f8f9fd` | `#4450c4` | `#7d5a00` | `#f5d66b` |
+| **Lantern Obsidian Light** | Hint of purple | `#f9f8fd` | `#6741c4` | `#7d5300` | `#f3cf62` |
+| **Lantern Abyss Light** | Hint of blue | `#f8fafd` | `#1c5bbf` | `#7a5600` | `#f2d052` |
 
 ## Features
 

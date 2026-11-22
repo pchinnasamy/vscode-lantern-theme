@@ -2,7 +2,7 @@
   "name": "lantern-theme",
   "displayName": "Lantern Theme",
   "description": "Very dark blue and violet themes for VS Code, lit with gold highlights: Nightshade, Obsidian and Abyss, each with a near-white light twin.",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "publisher": "PChin",
   "license": "MIT",
   "icon": "icon.png",

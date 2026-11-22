@@ -258,6 +258,10 @@ if (!browser) {
   console.error('No Chromium browser found. Set BROWSER to Edge or Chrome, or open ' + htmlPath);
   process.exit(1);
 }
+// The browser can return before the screenshot is saved (Edge does this while
+// an update is waiting to install, by handing off to another process), so
+// capture to a temp file and wait for it to appear and stop growing.
+const shot = path.join(tmp, 'shot.png');
 execFileSync(browser, [
   '--headless=new',
   '--disable-gpu',
@@ -267,8 +271,23 @@ execFileSync(browser, [
   '--force-device-scale-factor=2',
   '--default-background-color=00000000',
   `--window-size=${PAGE_W},${PAGE_H}`,
-  `--screenshot=${OUT_PNG}`,
+  `--screenshot=${shot}`,
   'file:///' + htmlPath.replace(/\\/g, '/')
 ], { stdio: 'ignore' });
+
+const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+let lastSize = -1;
+for (let waited = 0; waited < 30000; waited += 500) {
+  const size = fs.existsSync(shot) ? fs.statSync(shot).size : -1;
+  if (size > 0 && size === lastSize) break;
+  lastSize = size;
+  sleep(500);
+}
+if (!fs.existsSync(shot)) {
+  console.error(`The browser did not write a screenshot within 30 seconds. Open ${htmlPath} to check the page.`);
+  process.exit(1);
+}
+sleep(1000); // let the browser release the file and its profile before cleanup
+fs.copyFileSync(shot, OUT_PNG);
 fs.rmSync(tmp, { recursive: true, force: true });
 console.log(`wrote ${path.relative(ROOT, OUT_PNG)} (${PAGE_W}x${PAGE_H} at 2x)`);
